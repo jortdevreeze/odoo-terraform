@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    container_name: odoo-postgres
+    image: postgres:14.1-alpine
+    networks:
+      - web
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER_FILE: /run/secrets/odoo_user
+      POSTGRES_PASSWORD_FILE: /run/secrets/odoo_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    secrets:
+      - odoo_user
+      - odoo_password
+
+  odoo:
+    container_name: odoo
+    image: odoo:17.0
+    networks:
+      - web
+    environment:
+      HOST: postgres
+      USER_FILE: /run/secrets/odoo_user
+      PASSWORD_FILE: /run/secrets/odoo_password
+    depends_on:
+      - postgres
+    ports:
+      - 8069:8069
+    volumes:
+      - odoo_config:/etc/odoo
+      - odoo_extra-addons:/mnt/extra-addons
+      - odoo_data:/var/lib/odoo
+    restart: always
+    links:
+      - postgres
+    secrets:
+      - odoo_user
+      - odoo_password
+
+networks:
+  web:
+    external: true
+    name: web
+
+volumes:
+  postgres_data:
+  odoo_config:
+  odoo_extra-addons:
+  odoo_data:
+
+secrets:
+  odoo_user:
+    file: ./odoo_user.txt
+  odoo_password:
+    file: ./odoo_password.txt
